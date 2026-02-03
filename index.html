@@ -1,0 +1,526 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аудио → Текст</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            background: #f8f9fa;
+            color: #212529;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        h1 {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .description {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .controls {
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        button, select, .file-label {
+            padding: 8px 16px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        
+        button:hover, select:hover, .file-label:hover {
+            border-color: #6c757d;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .recording {
+            background: #fff5f5;
+            border-color: #dc3545;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .status {
+            padding: 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        .status.recording {
+            background: #fff5f5;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .section {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .section-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        .counter {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: none;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #212529;
+        }
+        
+        textarea:focus {
+            outline: none;
+        }
+        
+        .tech-info {
+            padding: 15px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #495057;
+        }
+        
+        .tech-info h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .tech-info ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .tech-info li {
+            margin-bottom: 5px;
+        }
+        
+        .tech-info code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Конвертер аудио в текст</h1>
+        <p class="description">Преобразование голоса и аудиофайлов в текст с созданием конспекта</p>
+    </header>
+    
+    <main>
+        <div class="controls">
+            <button id="recordBtn">Начать запись</button>
+            
+            <label class="file-label">
+                Загрузить аудио
+                <input type="file" id="audioFile" class="file-input" accept="audio/*">
+            </label>
+            
+            <button id="clearBtn">Очистить</button>
+            
+            <select id="languageSelect">
+                <option value="ru-RU">Русский</option>
+                <option value="en-US">Английский</option>
+            </select>
+        </div>
+        
+        <div class="status" id="statusBox">
+            Готов к работе
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">Распознанный текст</div>
+                    <div class="counter" id="textCounter">0 симв.</div>
+                </div>
+                <textarea id="transcriptionText" placeholder="Текст появится здесь..."></textarea>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">Конспект</div>
+                    <div class="counter" id="summaryCounter">0 симв.</div>
+                </div>
+                <textarea id="summaryText" placeholder="Конспект появится здесь..."></textarea>
+                <div style="padding: 12px 16px; border-top: 1px solid #dee2e6;">
+                    <button id="summaryBtn" style="width: 100%;" disabled>Создать конспект</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tech-info">
+            <h3>Используемые технологии:</h3>
+            <ul>
+                <li><strong>Web Speech API</strong> - для распознавания живого голоса через микрофон</li>
+                <li><strong>HTML5 File API</strong> - для загрузки аудиофайлов</li>
+                <li><strong>JavaScript (ES6+)</strong> - клиентская логика обработки</li>
+            </ul>
+            <p>Распознавание живого голоса работает в браузере (требуется Chrome). Распознавание аудиофайлов - демо-версия.</p>
+        </div>
+    </main>
+
+    <script>
+        // ==================== КОНФИГУРАЦИЯ ====================
+        const SUPPORTED_FORMATS = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm'];
+        
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        const elements = {
+            recordBtn: document.getElementById('recordBtn'),
+            audioFileInput: document.getElementById('audioFile'),
+            clearBtn: document.getElementById('clearBtn'),
+            languageSelect: document.getElementById('languageSelect'),
+            statusBox: document.getElementById('statusBox'),
+            transcriptionText: document.getElementById('transcriptionText'),
+            summaryText: document.getElementById('summaryText'),
+            summaryBtn: document.getElementById('summaryBtn'),
+            textCounter: document.getElementById('textCounter'),
+            summaryCounter: document.getElementById('summaryCounter')
+        };
+        
+        let state = {
+            recognition: null,
+            isRecording: false,
+            recordedText: ''
+        };
+        
+        // ==================== РАСПОЗНАВАНИЕ РЕЧИ ====================
+        function initSpeechRecognition() {
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!window.SpeechRecognition) {
+                elements.statusBox.textContent = 'Браузер не поддерживает запись голоса. Используйте Chrome.';
+                elements.recordBtn.disabled = true;
+                return;
+            }
+            
+            state.recognition = new SpeechRecognition();
+            state.recognition.continuous = true;
+            state.recognition.interimResults = true;
+            state.recognition.lang = elements.languageSelect.value;
+            
+            state.recognition.onstart = () => {
+                state.isRecording = true;
+                elements.recordBtn.classList.add('recording');
+                elements.recordBtn.textContent = 'Остановить запись';
+                elements.statusBox.classList.add('recording');
+                elements.statusBox.textContent = 'Идет запись...';
+            };
+            
+            state.recognition.onresult = (event) => {
+                let finalTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    }
+                }
+                
+                state.recordedText += finalTranscript;
+                elements.transcriptionText.value = state.recordedText;
+                updateCounters();
+                
+                if (elements.transcriptionText.value.trim().length > 30) {
+                    elements.summaryBtn.disabled = false;
+                }
+            };
+            
+            state.recognition.onerror = (event) => {
+                if (event.error === 'not-allowed') {
+                    elements.statusBox.textContent = 'Разрешите доступ к микрофону';
+                } else if (event.error === 'no-speech') {
+                    elements.statusBox.textContent = 'Речь не обнаружена';
+                }
+                
+                stopRecording();
+            };
+            
+            state.recognition.onend = () => {
+                if (state.isRecording) {
+                    setTimeout(() => {
+                        if (state.isRecording && state.recognition) {
+                            state.recognition.start();
+                        }
+                    }, 100);
+                }
+            };
+        }
+        
+        function startRecording() {
+            if (!state.recognition) {
+                initSpeechRecognition();
+            }
+            
+            try {
+                state.recognition.start();
+            } catch (error) {
+                elements.statusBox.textContent = 'Ошибка доступа к микрофону';
+            }
+        }
+        
+        function stopRecording() {
+            if (state.recognition && state.isRecording) {
+                state.recognition.stop();
+                state.isRecording = false;
+                elements.recordBtn.classList.remove('recording');
+                elements.recordBtn.textContent = 'Начать запись';
+                elements.statusBox.classList.remove('recording');
+                elements.statusBox.textContent = 'Запись завершена';
+            }
+        }
+        
+        // ==================== ОБРАБОТКА ФАЙЛОВ ====================
+        elements.audioFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!SUPPORTED_FORMATS.includes(file.type)) {
+                elements.statusBox.textContent = 'Поддерживаются MP3, WAV, OGG форматы';
+                return;
+            }
+            
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+            elements.statusBox.textContent = `Файл: ${file.name} (${fileSizeMB} MB)`;
+            
+            setTimeout(() => {
+                showDemoText(file.name);
+            }, 500);
+        });
+        
+        function showDemoText(filename) {
+            const demoText = `Демонстрационный текст из файла "${filename}".
+
+Для реального распознавания аудиофайлов требуется серверная обработка.
+
+Это тестовый текст для демонстрации работы приложения. В реальном приложении здесь был бы распознанный текст из аудиофайла.
+
+Вы можете протестировать создание конспекта нажав кнопку "Создать конспект".`;
+            
+            state.recordedText = demoText;
+            elements.transcriptionText.value = demoText;
+            updateCounters();
+            elements.summaryBtn.disabled = false;
+        }
+        
+        // ==================== СОЗДАНИЕ КОНСПЕКТА ====================
+        function createSummary() {
+            const text = elements.transcriptionText.value.trim();
+            if (!text) return;
+            
+            elements.statusBox.textContent = 'Создаю конспект...';
+            elements.summaryBtn.disabled = true;
+            
+            setTimeout(() => {
+                const result = generateSummary(text);
+                elements.summaryText.value = result;
+                elements.statusBox.textContent = 'Конспект создан';
+                elements.summaryBtn.disabled = false;
+                updateCounters();
+            }, 800);
+        }
+        
+        function generateSummary(text) {
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            
+            if (sentences.length <= 2) {
+                return text.substring(0, 250) + (text.length > 250 ? "..." : "");
+            }
+            
+            const importantWords = ['важно', 'основной', 'главный', 'ключевой', 'итог', 'вывод'];
+            const selectedSentences = [];
+            
+            if (sentences[0]) selectedSentences.push(sentences[0].trim());
+            
+            for (let i = 1; i < Math.min(sentences.length, 6); i++) {
+                const sentence = sentences[i].toLowerCase();
+                if (importantWords.some(word => sentence.includes(word))) {
+                    if (selectedSentences.length < 4) {
+                        selectedSentences.push(sentences[i].trim());
+                    }
+                }
+            }
+            
+            if (sentences.length > 1) {
+                const lastSentence = sentences[sentences.length - 1].trim();
+                if (!selectedSentences.includes(lastSentence)) {
+                    selectedSentences.push(lastSentence);
+                }
+            }
+            
+            let summary = "Конспект:\n\n";
+            selectedSentences.forEach((sentence, index) => {
+                let clean = sentence.trim();
+                if (!clean.endsWith('.') && !clean.endsWith('!') && !clean.endsWith('?')) {
+                    clean += '.';
+                }
+                summary += `${index + 1}. ${clean}\n`;
+            });
+            
+            const originalLength = text.length;
+            const summaryLength = summary.length;
+            const compression = Math.round((1 - summaryLength / originalLength) * 100);
+            
+            summary += `\nСжатие: ${compression}% (${originalLength} → ${summaryLength} символов)`;
+            
+            return summary;
+        }
+        
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        function updateCounters() {
+            const textLength = elements.transcriptionText.value.length;
+            const summaryLength = elements.summaryText.value.length;
+            elements.textCounter.textContent = `${textLength} симв.`;
+            elements.summaryCounter.textContent = `${summaryLength} симв.`;
+        }
+        
+        function clearAll() {
+            state.recordedText = '';
+            elements.transcriptionText.value = '';
+            elements.summaryText.value = '';
+            
+            if (state.isRecording) {
+                stopRecording();
+            }
+            
+            elements.statusBox.className = 'status';
+            elements.statusBox.textContent = 'Готов к работе';
+            elements.summaryBtn.disabled = true;
+            elements.audioFileInput.value = '';
+            
+            updateCounters();
+        }
+        
+        // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
+        elements.recordBtn.addEventListener('click', () => {
+            if (state.isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+        
+        elements.clearBtn.addEventListener('click', clearAll);
+        elements.summaryBtn.addEventListener('click', createSummary);
+        
+        elements.languageSelect.addEventListener('change', function() {
+            if (state.recognition) {
+                state.recognition.lang = this.value;
+            }
+            if (state.isRecording) {
+                stopRecording();
+                setTimeout(startRecording, 300);
+            }
+        });
+        
+        elements.transcriptionText.addEventListener('input', function() {
+            state.recordedText = this.value;
+            updateCounters();
+            elements.summaryBtn.disabled = this.value.trim().length < 30;
+        });
+        
+        elements.summaryText.addEventListener('input', updateCounters);
+        
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (!elements.transcriptionText.value) {
+                    elements.transcriptionText.value = `Пример текста для тестирования.
+
+Функции приложения:
+1. Запись голоса через микрофон
+2. Демонстрационная загрузка аудиофайлов
+3. Создание краткого конспекта из текста
+4. Подсчет статистики и сжатия текста
+
+Нажмите "Начать запись" для записи голоса или "Загрузить аудио" для тестового текста.`;
+                    
+                    updateCounters();
+                    elements.summaryBtn.disabled = false;
+                }
+            }, 300);
+        });
+        
+        window.addEventListener('beforeunload', function(e) {
+            if (state.isRecording) {
+                e.preventDefault();
+                e.returnValue = 'Идет запись. Вы уверены, что хотите уйти?';
+            }
+        });
+    </script>
+</body>
+</html>
